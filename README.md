@@ -2,7 +2,7 @@
 
 ## Demo
 
-http://michinobu.jp/vortex2
+http://pages.michinobu.jp/vortex2
 
 ## Prerequisite
 
