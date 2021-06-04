@@ -6,14 +6,14 @@ class VortexDot {
   late final double _x;
   late final double _y;
   late Color _color;
-  late double _dFadeOut;
+  late double _fadeOut;
 
-  VortexDot(double r, double x, double y, Color color, double dFadeOut) {
+  VortexDot(double r, double x, double y, Color color, double fadeOut) {
     _r = r;
     _x = x;
     _y = y;
     _color = color;
-    _dFadeOut = dFadeOut;
+    _fadeOut = fadeOut;
   }
 
   void tick() {
@@ -21,7 +21,7 @@ class VortexDot {
       _color.red,
       _color.green,
       _color.blue,
-      _color.opacity - _dFadeOut,
+      _color.opacity * _fadeOut,
     );
   }
 
@@ -48,6 +48,7 @@ class VortexLine {
   late final double _rotations;
   late final double _dotR;
   late final Color _color;
+  late final double _fadeOut;
   late final double _startRadian;
   late int _waitStart;
   double _life = 1.0;
@@ -59,6 +60,7 @@ class VortexLine {
     double rotations,
     double dotR,
     Color color,
+    double fadeOut,
     double startRadian,
     int waitStart,
   ) {
@@ -67,6 +69,7 @@ class VortexLine {
     _rotations = rotations;
     _dotR = dotR;
     _color = color;
+    _fadeOut = fadeOut;
     _startRadian = startRadian;
     _waitStart = waitStart;
   }
@@ -77,24 +80,29 @@ class VortexLine {
       return;
     }
     double radius = 0.5 - _dotR * 1.5 - (0.5 - _dotR * 3) * (1.0 - _life);
-    double radian = (sqrt(_life) * pi * 2 * _rotations) + _startRadian;
+    double radian = sqrt(sqrt(_life)) * 8.0 * _rotations + _startRadian;
     _dots.add(VortexDot(
       _dotR,
       0.5 + radius * sin(radian),
       0.5 + radius * cos(radian),
-      _color,
-      1.0 / (_tailCount + 2),
+      Color.fromRGBO(
+        _color.red,
+        _color.green,
+        _color.blue,
+        sqrt(1.0 - _life),
+      ),
+      _fadeOut,
     ));
 
     if (_dots.length > _tailCount) {
       _dots.removeAt(0);
     }
 
-    for (int j = 0; j < _dots.length; ++j) {
-      _dots[j].tick();
+    for (VortexDot dot in _dots) {
+      dot.tick();
     }
 
-    _life -= 1 / _lifespan;
+    _life -= 1.0 / _lifespan;
     if (_life < 0) {
       _life = 1.0;
     }
@@ -118,6 +126,7 @@ class Vortex {
     int lifespan = 100,
     double rotations = 3.0,
     double dotR = 0.04,
+    double fadeOut = 0.85,
     int lineCount = 3,
   }) {
     for (int i = 0; i < lineCount; ++i) {
@@ -127,6 +136,7 @@ class Vortex {
         rotations,
         dotR,
         _dotColors[i % _dotColors.length],
+        fadeOut,
         pi * 2 / _dotColors.length * i,
         i * (lifespan / lineCount).round(),
       ));
@@ -134,8 +144,8 @@ class Vortex {
   }
 
   List<VortexLine> tick() {
-    for (int i = 0; i < _lines.length; ++i) {
-      _lines[i].tick();
+    for (VortexLine line in _lines) {
+      line.tick();
     }
 
     return _lines;
