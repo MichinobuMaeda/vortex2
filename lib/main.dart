@@ -30,7 +30,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Vortex _vortex = Vortex(
-    dotR: 0.02,
+    size: 0.02,
     lineCount: 15,
   );
 
@@ -80,8 +80,14 @@ class MyPainter extends CustomPainter {
     final double sz = min(size.width, size.height);
     _lines.forEach((line) {
       line.dots.forEach((dot) {
-        canvas.drawCircle(Offset(sz * dot.y, sz * dot.x), sz * dot.r,
-            Paint()..color = dot.color);
+        canvas.drawCircle(
+          Offset(
+            sz * (0.5 + dot.radius * sin(dot.angle)),
+            sz * (0.5 + dot.radius * cos(dot.angle)),
+          ),
+          sz * dot.size,
+          Paint()..color = dot.color,
+        );
       });
     });
   }

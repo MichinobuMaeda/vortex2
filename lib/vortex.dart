@@ -2,114 +2,84 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 class VortexDot {
-  late final double _r;
-  late final double _x;
-  late final double _y;
-  late Color _color;
-  late double _fadeOut;
+  late final double size;
+  late final Color color;
+  late double radius;
+  late double angle;
 
-  VortexDot(double r, double x, double y, Color color, double fadeOut) {
-    _r = r;
-    _x = x;
-    _y = y;
-    _color = color;
-    _fadeOut = fadeOut;
-  }
-
-  void tick() {
-    _color = Color.fromRGBO(
-      _color.red,
-      _color.green,
-      _color.blue,
-      _color.opacity * _fadeOut,
-    );
-  }
-
-  double get r {
-    return _r;
-  }
-
-  double get x {
-    return _x;
-  }
-
-  double get y {
-    return _y;
-  }
-
-  Color get color {
-    return _color;
-  }
+  VortexDot({
+    required this.size,
+    required this.radius,
+    required this.angle,
+    required this.color,
+  });
 }
 
 class VortexLine {
-  late final int _tailCount;
-  late final int _lifespan;
-  late final double _rotations;
-  late final double _dotR;
-  late final Color _color;
-  late final double _fadeOut;
-  late final double _startRadian;
-  late int _waitStart;
-  double _life = 1.0;
-  final List<VortexDot> _dots = [];
+  final List<VortexDot> dots = [];
+  final double size;
+  final Color color;
+  final int dotCount;
+  final int lifeCount;
+  late int _waitCount;
+  final double rotations;
+  final double startAngle;
+  late final double _radiusStart;
+  late final double _radiusEnd;
+  late double _life = 0.0;
 
-  VortexLine(
-    int tailCount,
-    int lifespan,
-    double rotations,
-    double dotR,
-    Color color,
-    double fadeOut,
-    double startRadian,
-    int waitStart,
-  ) {
-    _tailCount = tailCount;
-    _lifespan = lifespan;
-    _rotations = rotations;
-    _dotR = dotR;
-    _color = color;
-    _fadeOut = fadeOut;
-    _startRadian = startRadian;
-    _waitStart = waitStart;
+  VortexLine({
+    required this.size,
+    required this.color,
+    required this.dotCount,
+    required this.lifeCount,
+    required int waitCount,
+    required this.rotations,
+    required this.startAngle,
+  }) {
+    _waitCount = waitCount;
+    _radiusStart = 0.5 - size * 1.5;
+    _radiusEnd = size * 0.5;
   }
+
+  double _deltaRadius() =>
+      -(_radiusStart - _radiusEnd) / lifeCount * sqrt(_life) * sqrt2;
+  double _deltaAngle() => rotations / lifeCount * 5 * sqrt(_life / 2 + 0.5);
 
   void tick() {
-    if (0 < _waitStart) {
-      --_waitStart;
+    if (0 < _waitCount) {
+      --_waitCount;
       return;
     }
-    double radius = 0.5 - _dotR * 1.5 - (0.5 - _dotR * 3) * (1.0 - _life);
-    double radian = sqrt(sqrt(_life)) * 8.0 * _rotations + _startRadian;
-    _dots.add(VortexDot(
-      _dotR,
-      0.5 + radius * sin(radian),
-      0.5 + radius * cos(radian),
-      Color.fromRGBO(
-        _color.red,
-        _color.green,
-        _color.blue,
-        sqrt(1.0 - _life),
-      ),
-      _fadeOut,
-    ));
 
-    if (_dots.length > _tailCount) {
-      _dots.removeAt(0);
+    if (dots.length < dotCount) {
+      dots.add(VortexDot(
+        size: size,
+        radius:
+            dots.length == 0 ? _radiusStart : dots.last.radius + _deltaRadius(),
+        angle: dots.length == 0 ? startAngle : dots.last.angle + _deltaAngle(),
+        color: Color.fromRGBO(
+          color.red,
+          color.green,
+          color.blue,
+          sqrt(1.0 / dotCount * (dots.length + 1)),
+        ),
+      ));
+    } else {
+      for (int i = 1; i < dots.length; ++i) {
+        dots[i - 1].radius = dots[i].radius;
+        dots[i - 1].angle = dots[i].angle;
+      }
+      dots.last.radius += _deltaRadius();
+      dots.last.angle += _deltaAngle();
     }
 
-    for (VortexDot dot in _dots) {
-      dot.tick();
+    _life += 1.0 / lifeCount;
+    if (1.0 < _life) {
+      _life = 0.0;
+      dots.last.radius = _radiusStart;
+      dots.last.angle = startAngle;
     }
-
-    _life -= 1.0 / _lifespan;
-    if (_life < 0) {
-      _life = 1.0;
-    }
-  }
-
-  List<VortexDot> get dots {
-    return _dots;
   }
 }
 
@@ -122,23 +92,21 @@ class Vortex {
   final List<VortexLine> _lines = [];
 
   Vortex({
-    int tailCount = 10,
-    int lifespan = 100,
+    int dotCount = 10,
+    int lifeCount = 100,
     double rotations = 3.0,
-    double dotR = 0.04,
-    double fadeOut = 0.85,
+    double size = 0.04,
     int lineCount = 3,
   }) {
     for (int i = 0; i < lineCount; ++i) {
       _lines.add(VortexLine(
-        tailCount,
-        lifespan,
-        rotations,
-        dotR,
-        _dotColors[i % _dotColors.length],
-        fadeOut,
-        pi * 2 / _dotColors.length * i,
-        i * (lifespan / lineCount).round(),
+        size: size,
+        color: _dotColors[i % _dotColors.length],
+        dotCount: dotCount,
+        lifeCount: lifeCount,
+        waitCount: (lifeCount / lineCount * i).round(),
+        rotations: rotations,
+        startAngle: pi * 2 / _dotColors.length * i,
       ));
     }
   }
